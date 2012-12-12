@@ -14,7 +14,7 @@ static pthread_mutex_t *ssl_locks = NULL;
 static long *ssl_lock_count;
 
 #define DATASIZE 16
-#define DATANUM 2000000
+#define DATANUM 2500000
 static char data[DATANUM][DATASIZE];
 
 struct fromto { int from, to; };
@@ -83,6 +83,8 @@ void hash_one(int num)
                 return;
         }
 
+        return;
+
         for(i = 0; i < md_len; i++)
                 printf("%02x", hash[i]);
         printf("\n");
@@ -107,9 +109,11 @@ void hash_all(int num)
         int i;
         pthread_t *t;
         struct fromto *ft;
+        clock_t start, end;
+
+        start = clock();
 
         t = malloc(num * sizeof *t);
-
         for(i = 0; i < num; i++) {
                 ft = malloc(sizeof(struct fromto));
                 ft->from = i * (DATANUM/num);
@@ -120,12 +124,26 @@ void hash_all(int num)
 
         for(i = 0; i < num; i++)
                 pthread_join(t[i], NULL);
+
+        end = clock();
+
+        printf("%d threads: %ld hashes/s, total = %.3fs\n",
+                num, DATANUM * CLOCKS_PER_SEC / (end-start),
+                (end-start)/(double)CLOCKS_PER_SEC);
+        sleep(1);
 }
 
 int main(int argc, char **argv)
 {
         init_openssl();
         init_data();
+
         hash_all(1);
+        hash_all(2);
+        hash_all(4);
+        hash_all(8);
+        hash_all(12);
+        hash_all(24);
+
         return 0;
 }
