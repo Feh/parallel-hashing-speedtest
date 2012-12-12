@@ -14,8 +14,10 @@ static pthread_mutex_t *ssl_locks = NULL;
 static long *ssl_lock_count;
 
 #define DATASIZE 16
-#define DATANUM 200000
+#define DATANUM 2000000
 static char data[DATANUM][DATASIZE];
+
+struct fromto { int from, to; };
 
 unsigned long ssl_thread_id() {
     return (unsigned long)pthread_self();
@@ -86,18 +88,44 @@ void hash_one(int num)
         printf("\n");
 }
 
-void hash_all(void)
+void *hash_slice(void *arg)
+{
+        int n, from, to;
+        struct fromto *ft = (struct fromto *) arg;
+
+        from = ft->from;
+        to = ft->to;
+
+        for(n = from; n < to; n++)
+                hash_one(n);
+
+        return NULL;
+}
+
+void hash_all(int num)
 {
         int i;
+        pthread_t *t;
+        struct fromto *ft;
 
-        for(i = 0; i < DATANUM; i++)
-                hash_one(i);
+        t = malloc(num * sizeof *t);
+
+        for(i = 0; i < num; i++) {
+                ft = malloc(sizeof(struct fromto));
+                ft->from = i * (DATANUM/num);
+                ft->to = ((i+1) * (DATANUM/num)) > DATANUM ?
+                        DATANUM : (i+1) * (DATANUM/num);
+                pthread_create(&t[i], NULL, hash_slice, ft);
+        }
+
+        for(i = 0; i < num; i++)
+                pthread_join(t[i], NULL);
 }
 
 int main(int argc, char **argv)
 {
         init_openssl();
         init_data();
-        hash_all();
+        hash_all(1);
         return 0;
 }
