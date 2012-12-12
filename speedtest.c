@@ -14,7 +14,7 @@ static pthread_mutex_t *ssl_locks = NULL;
 static long *ssl_lock_count;
 
 #define DATASIZE 16
-#define DATANUM 2500000
+#define DATANUM 10000000
 static char data[DATANUM][DATASIZE];
 
 struct fromto { int from, to; };
