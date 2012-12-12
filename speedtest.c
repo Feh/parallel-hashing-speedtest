@@ -124,9 +124,10 @@ void hash_all(int num)
         int i;
         pthread_t *t;
         struct fromto *ft;
-        clock_t start, end;
+        struct timespec start, end;
+        double delta;
 
-        start = clock();
+        clock_gettime(CLOCK_MONOTONIC, &start);
 
         t = malloc(num * sizeof *t);
         for(i = 0; i < num; i++) {
@@ -140,11 +141,13 @@ void hash_all(int num)
         for(i = 0; i < num; i++)
                 pthread_join(t[i], NULL);
 
-        end = clock();
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        delta = end.tv_sec - start.tv_sec;
+        delta += (end.tv_nsec - start.tv_nsec) / 1000000000.0;
 
         printf("%d threads: %ld hashes/s, total = %.3fs\n",
-                num, DATANUM * CLOCKS_PER_SEC / (end-start),
-                (end-start)/(double)CLOCKS_PER_SEC);
+                num, (unsigned long) (DATANUM / delta), delta);
         free(t);
         sleep(1);
 }
