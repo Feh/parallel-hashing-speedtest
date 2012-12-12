@@ -69,12 +69,23 @@ void init_data(void)
 void hash_one(int num)
 {
         int i;
-        EVP_MD_CTX mdctx;
         unsigned char hash[EVP_MAX_MD_SIZE];
         unsigned int md_len;
 
-        /* protect this with mutex */
+#ifdef LOCK_STATIC_EVP_MD_CTX
+        static EVP_MD_CTX mdctx;
+        static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+        static unsigned char first = 1;
+
+        pthread_mutex_lock(&lock);
+        if (first) {
+                EVP_MD_CTX_init(&mdctx);
+                first = 0;
+        }
+#else
+        EVP_MD_CTX mdctx;
         EVP_MD_CTX_init(&mdctx);
+#endif
 
         if (!EVP_DigestInit_ex(&mdctx, EVP_sha256(), NULL) ||
             !EVP_DigestUpdate(&mdctx, data[num], DATASIZE) ||
@@ -82,6 +93,10 @@ void hash_one(int num)
                 fprintf(stderr, "ERROR");
                 return;
         }
+
+#ifdef LOCK_STATIC_EVP_MD_CTX
+        pthread_mutex_unlock(&lock);
+#endif
 
         return;
 
@@ -130,6 +145,7 @@ void hash_all(int num)
         printf("%d threads: %ld hashes/s, total = %.3fs\n",
                 num, DATANUM * CLOCKS_PER_SEC / (end-start),
                 (end-start)/(double)CLOCKS_PER_SEC);
+        free(t);
         sleep(1);
 }
 
