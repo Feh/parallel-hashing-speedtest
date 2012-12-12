@@ -112,6 +112,7 @@ void *hash_slice(void *arg)
 
         from = ft->from;
         to = ft->to;
+        free(ft);
 
         for(n = from; n < to; n++)
                 hash_one(n);
