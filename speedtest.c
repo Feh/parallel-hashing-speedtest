@@ -89,9 +89,9 @@ void hash_one(int num)
 
         if (!EVP_DigestInit_ex(&mdctx, EVP_sha256(), NULL) ||
             !EVP_DigestUpdate(&mdctx, data[num], DATASIZE) ||
-            !EVP_DigestFinal_ex(&mdctx, hash, &md_len)) {
-                fprintf(stderr, "ERROR");
-                return;
+            !EVP_DigestFinal(&mdctx, hash, &md_len)) {
+                ERR_print_errors_fp(stderr);
+                exit(-1);
         }
 
 #ifdef LOCK_STATIC_EVP_MD_CTX
